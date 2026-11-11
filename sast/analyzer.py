@@ -2,11 +2,12 @@
 import ast
 
 from .rules.hardcoded_secret import HardcodedSecretRule
+from .rules.insecure_deserialization import InsecureDeserializationRule
 
 
 def load_rules():
-    # TODO: 命令注入、路径穿越、不安全反序列化、SSRF 等规则尚未实现
-    return [HardcodedSecretRule()]
+    # TODO: 命令注入、路径穿越、SSRF 等规则尚未实现
+    return [HardcodedSecretRule(), InsecureDeserializationRule()]
 
 
 def analyze_source(source: str, filename: str):

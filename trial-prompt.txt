@@ -1,0 +1,7 @@
+在现有 py-sast-engine 骨架上新增一个不安全反序列化规则。直接用 Write/Edit 完成，不要运行 ls、find 等探索命令，保持现有接口与目录结构，仅用标准库。
+
+具体要求：
+1. 新建 sast/rules/insecure_deserialization.py，实现 InsecureDeserializationRule（规则 ID 用 PY002，severity 为 error），基于 AST 检测对 pickle.loads、pickle.load、marshal.loads 的调用，命中时返回 Finding，message 写清是哪个反序列化函数。
+2. 在 sast/analyzer.py 的 load_rules 中注册该规则，保留现有 HardcodedSecretRule。
+3. 在 tests/ 下新增 test_insecure_deserialization.py，包含一个真阳性用例（pickle.loads 调用应被检出）和一个误报用例（普通 json.loads 不应被检出）。
+4. 运行 python -m pytest tests/ -q 确认全部通过，并在回复中给出测试结果。
