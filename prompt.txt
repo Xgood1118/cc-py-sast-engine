@@ -1,0 +1,29 @@
+在现有 py-sast-engine 骨架上，把它扩展成一个基于 AST、带过程内污点分析的 Python 静态安全分析器。不要推倒重写，保留现有的 Rule/Finding 接口、HardcodedSecretRule（PY001）和目录结构。仅使用 Python 标准库实现，不得引入第三方运行依赖，不得修改 samples/ 目录下的文件。
+
+需要完成：
+
+1. 新增四类漏洞规则，各自分配稳定规则 ID：
+   - 命令注入：os.system、subprocess.call/run/Popen 在 shell=True 或拼接字符串下接收污点数据。
+   - 路径穿越：open、os.path.join 拼接外部输入后用于文件访问。
+   - 不安全反序列化：pickle.loads、pickle.load、marshal.loads 接收污点数据。
+   - SSRF：requests.get/post、urllib 用外部可控 URL 发起请求。
+
+2. 实现过程内（intra-procedural）污点分析：
+   - 污点源（source）至少包含函数参数、sys.argv、input() 的返回值。
+   - 追踪变量赋值、属性/下标、函数调用参数传递与返回值，把污点传播到 sink；同一文件内的跨函数调用要能跟到被调函数的参数。
+   - 常量字符串、字面量拼接中全部为常量的情况不得标记为污点。
+
+3. 误报控制：
+   - 支持行内 "# nosec" 注释抑制该行告警；支持在注释中指定规则 ID（如 "# nosec: PY002"）只抑制对应规则。
+   - 提供一个 sanitizer 白名单机制（例如经过 os.path.realpath 或自定义校验函数后），命中则污点不再传播到路径类 sink。
+
+4. 报告输出：实现 sast/sarif.py 的 to_sarif，输出符合 SARIF 2.1.0 规范的 JSON（含 rule 元数据、artifact 位置、行号、级别）。
+
+5. 完善 CLI（sast/cli.py）：
+   - 支持递归扫描目录，跳过 .git、__pycache__、venv 等目录。
+   - 支持 --rule 按规则 ID 过滤、--severity 按最低严重级别过滤、--sarif 输出 SARIF。
+   - 退出码：发现 error 级告警返回非 0，无告警返回 0，解析/运行错误返回 2。
+
+6. 测试：在 tests/ 下补充单元测试，每类规则至少一个真阳性用例和一个不应报警的误报用例，并覆盖 nosec 抑制与目录扫描；保证 python -m pytest 全部通过。
+
+完成后用 samples/vulnerable.py 实际跑一遍 CLI，确认能识别其中的命令注入、路径穿越、不安全反序列化和 SSRF。
